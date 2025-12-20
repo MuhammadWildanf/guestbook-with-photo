@@ -30,8 +30,8 @@ admin.initializeApp({
     universe_domain: process.env.FIREBASE_UNIVERSE_DOMAIN,
   }),
   databaseURL:
-    "https://infocomm-bangkok-default-rtdb.asia-southeast1.firebasedatabase.app",
-  storageBucket: "infocomm-bangkok.firebasestorage.app",
+    "https://guestbook-with-photo-446da-default-rtdb.asia-southeast1.firebasedatabase.app",
+  storageBucket: "guestbook-with-photo-446da.firebasestorage.app",
 });
 
 // Serve frontend
