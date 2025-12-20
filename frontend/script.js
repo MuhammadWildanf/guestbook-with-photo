@@ -67,6 +67,27 @@ document.addEventListener("DOMContentLoaded", function () {
     }, 200);
   }
 
+  function startCountdown(seconds = 3) {
+    return new Promise((resolve) => {
+      const countdownEl = document.getElementById("countdown");
+      let counter = seconds;
+
+      countdownEl.textContent = counter;
+      countdownEl.style.display = "block";
+
+      const interval = setInterval(() => {
+        counter--;
+        if (counter > 0) {
+          countdownEl.textContent = counter;
+        } else {
+          clearInterval(interval);
+          countdownEl.style.display = "none";
+          resolve();
+        }
+      }, 1000);
+    });
+  }
+
   // --- Capture foto (mirror & preview) ---
   takePhotoBtn.addEventListener("click", async () => {
     const detections = await faceapi.detectAllFaces(
@@ -81,6 +102,11 @@ document.addEventListener("DOMContentLoaded", function () {
       );
       return;
     }
+
+    // 🔢 Countdown dulu
+    takePhotoBtn.disabled = true;
+    await startCountdown(3);
+    takePhotoBtn.disabled = false;
 
     // proses ambil foto (kode kamu yang lama tetap di sini)
     canvas.width = video.videoWidth || 320;

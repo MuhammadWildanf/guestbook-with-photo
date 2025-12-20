@@ -57,35 +57,46 @@
                       style="display:none; border-radius:12px; box-shadow:0 2px 8px #0002; margin-top:10px;" width="320"
                       height="240" />
                     <!-- Tambahkan frame overlay -->
-                    <div id="camera-frame" style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-           width:120px; height:160px; border:4px solid #1c8263; border-radius:50%;
-           pointer-events:none; box-shadow:0 0 16px #1c826388;">
+                    <div id="countdown" style="
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    font-size:64px;
+    font-weight:bold;
+    color:white;
+    text-shadow:0 0 10px black;
+    display:none;
+    z-index:10;
+  ">
+                      3
                     </div>
                   </div>
-                  <div class="d-flex justify-content-center gap-2">
-                    <button type="button" id="take-photo" class="btn btn-success">📸 Ambil Foto</button>
-                    <button type="button" id="retake-photo" class="btn btn-warning" style="display:none;">Foto
-                      Ulang</button>
-                  </div>
+                </div>
+                <div class="d-flex justify-content-center gap-2">
+                  <button type="button" id="take-photo" class="btn btn-success">📸 Ambil Foto</button>
+                  <button type="button" id="retake-photo" class="btn btn-warning" style="display:none;">Foto
+                    Ulang</button>
                 </div>
               </div>
             </div>
-            <div class="button d-flex justify-content-center">
-              <button id="next" class="custom-btn">MASUK</button>
-            </div>
           </div>
-        </form>
+          <div class="button d-flex justify-content-center">
+            <button id="next" class="custom-btn">MASUK</button>
+          </div>
       </div>
-      <div class="p2" id="p2" style="display: none;">
-        <div id="char-container"></div>
-        <div class="card text-light p-4 text-center" id="thank" style="background-color: #1c8263; border-radius: 20px;">
-          <h1 class="card-title mb-0" style="font-size: 25px;">Terimakasih</h1>
-          <h2 id="user-name" class="my-2" style="font-size: 30px; font-weight: bold;"></h2>
-          <h1 class="card-title mt-0" style="font-size: 25px;">Atas Partisipasinya!</h1>
-        </div>
+      </form>
+    </div>
+    <div class="p2" id="p2" style="display: none;">
+      <div id="char-container"></div>
+      <div class="card text-light p-4 text-center" id="thank" style="background-color: #1c8263; border-radius: 20px;">
+        <h1 class="card-title mb-0" style="font-size: 25px;">Terimakasih</h1>
+        <h2 id="user-name" class="my-2" style="font-size: 30px; font-weight: bold;"></h2>
+        <h1 class="card-title mt-0" style="font-size: 25px;">Atas Partisipasinya!</h1>
       </div>
     </div>
-    <div class="background-bottom"></div>
+  </div>
+  <div class="background-bottom"></div>
 
 </body>
 
