@@ -118,37 +118,49 @@ document.addEventListener("DOMContentLoaded", function () {
     );
 
     if (!finalDetection) {
-       Swal.fire("Gagal!", "Wajah hilang saat pengambilan foto. Silakan coba lagi.", "error");
-       return;
+      Swal.fire("Gagal!", "Wajah hilang saat pengambilan foto. Silakan coba lagi.", "error");
+      return;
     }
 
     const { box } = finalDetection;
-    
-    // Konfigurasi Crop (tambah padding agar tidak terlalu mepet)
-    const padding = 0.4; // 40% padding
-    const cropX = Math.max(0, box.x - box.width * padding);
-    const cropY = Math.max(0, box.y - box.height * padding);
-    const cropWidth = Math.min(video.videoWidth - cropX, box.width * (1 + padding * 2));
-    const cropHeight = Math.min(video.videoHeight - cropY, box.height * (1 + padding * 2));
+
+    // Perbaikan: Hitung titik tengah wajah agar hasil crop seimbang
+    const centerX = box.x + box.width / 2;
+    const centerY = box.y + box.height / 2;
+
+    // Gunakan sisi terpanjang (width atau height) agar area potong selalu KOTAK (1:1)
+    // Ditambah padding agar tidak terlalu mepet ke wajah
+    const side = Math.max(box.width, box.height) * 1.8;
+
+    // Tentukan koordinat awal (top-left) untuk area kotak tersebut
+    let cropX = centerX - side / 2;
+    let cropY = centerY - side / 2;
+
+    // Pastikan koordinat tidak keluar dari batas video asli
+    if (cropX < 0) cropX = 0;
+    if (cropY < 0) cropY = 0;
+
+    // Hitung lebar/tinggi akhir yang bisa diambil tanpa keluar batas
+    const finalSideX = Math.min(video.videoWidth - cropX, side);
+    const finalSideY = Math.min(video.videoHeight - cropY, side);
+    // Kita ambil yang terkecil agar tetap KOTAK sempurna
+    const finalSquareSide = Math.min(finalSideX, finalSideY);
 
     // --- PROSES CROP (untuk database) ---
     const cropCanvas = document.createElement("canvas");
-    cropCanvas.width = 300; // Ukuran standar wajah (biar enteng di DB)
+    cropCanvas.width = 300; // Ukuran standar wajah di database
     cropCanvas.height = 300;
     const cropCtx = cropCanvas.getContext("2d");
-    
-    // Mirroring untuk crop juga agar konsisten
+
+    // Mirroring agar hasil crop searah dengan yang dilihat user
     cropCtx.save();
     cropCtx.translate(cropCanvas.width, 0);
     cropCtx.scale(-1, 1);
-    
-    // Gambar hanya area wajah dari video (perhatikan videoWidth/height vs css width/height jika beda)
-    // Karena video asli di mirror di UI (transform: scaleX(-1)), kita harus hati-hati koordinatnya.
-    // face-api biasanya mendeteksi pada koordinat elemen asli (non-mirrored).
+
     cropCtx.drawImage(
-      video, 
-      cropX, cropY, cropWidth, cropHeight, // Source
-      0, 0, cropCanvas.width, cropCanvas.height // Destination
+      video,
+      cropX, cropY, finalSquareSide, finalSquareSide, // Source (selalu kotak)
+      0, 0, cropCanvas.width, cropCanvas.height       // Destination (selalu kotak 300x300)
     );
     cropCtx.restore();
 
@@ -165,17 +177,17 @@ document.addEventListener("DOMContentLoaded", function () {
     // Simpan hasil crop ke capturedBlob
     cropCanvas.toBlob((blob) => {
       capturedBlob = blob;
-      
+
       // Preview tetap pakai foto FULL (canvas utama) sesuai request
       const fullUrl = canvas.toDataURL("image/jpeg");
       photoPreview.src = fullUrl;
       photoPreview.style.display = "block";
-      
+
       video.style.display = "none";
       faceGuide.style.display = "none";
       takePhotoBtn.style.display = "none";
       retakePhotoBtn.style.display = "inline-block";
-      
+
       Swal.fire("Foto berhasil diambil!", "Wajah Anda telah di-crop untuk database.", "success");
     }, "image/jpeg", 0.8);
   });
