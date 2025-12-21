@@ -231,7 +231,7 @@ document.addEventListener("DOMContentLoaded", function () {
       formData.append("photo", photoBlob, "camera-photo.jpg");
 
       const response = await fetch(
-        "https://guestbook-capute.vercel.app/submit-form",
+        "https://guestbook-capture.vercel.app/submit-form",
         {
           // const response = await fetch("http://localhost:3000/submit-form", {
           method: "POST",
