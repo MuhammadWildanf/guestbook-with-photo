@@ -65,7 +65,7 @@ app.get("/dashboard", (req, res) => {
 app.get("/entries", async (req, res) => {
   try {
     const db = admin.database();
-    const ref = db.ref("testguest");
+    const ref = db.ref("guestbook");
     const snapshot = await ref.once("value");
     res.json(snapshot.val());
   } catch (error) {
@@ -77,7 +77,7 @@ app.get("/entries", async (req, res) => {
 app.get("/entries/:key", async (req, res) => {
   try {
     const db = admin.database();
-    const ref = db.ref(`testguest/${req.params.key}`);
+    const ref = db.ref(`guestbook/${req.params.key}`);
     const snapshot = await ref.once("value");
     res.json(snapshot.val());
   } catch (error) {
@@ -88,7 +88,7 @@ app.get("/entries/:key", async (req, res) => {
 app.put("/entries/:key", async (req, res) => {
   try {
     const db = admin.database();
-    const ref = db.ref(`testguest/${req.params.key}`);
+    const ref = db.ref(`guestbook/${req.params.key}`);
     await ref.update(req.body);
     res.json({ success: true });
   } catch (error) {
@@ -99,7 +99,7 @@ app.put("/entries/:key", async (req, res) => {
 app.delete("/entries/:key", async (req, res) => {
   try {
     const db = admin.database();
-    const ref = db.ref(`testguest/${req.params.key}`);
+    const ref = db.ref(`guestbook/${req.params.key}`);
     await ref.remove();
     res.json({ success: true });
   } catch (error) {
@@ -110,7 +110,7 @@ app.delete("/entries/:key", async (req, res) => {
 app.delete("/entries-all", async (req, res) => {
   try {
     const db = admin.database();
-    const ref = db.ref("testguest");
+    const ref = db.ref("guestbook");
     await ref.remove();
     res.json({ success: true });
   } catch (error) {
@@ -140,7 +140,7 @@ app.post("/submit-form", upload.single("photo"), async (req, res) => {
       photoUrl = `https://storage.googleapis.com/${bucket.name}/${destFileName}`;
     }
 
-    const ref = db.ref("testguest");
+    const ref = db.ref("guestbook");
     const newRef = await ref.push({ name, comment, photoUrl, timestamp });
     const newKey = newRef.key;
 

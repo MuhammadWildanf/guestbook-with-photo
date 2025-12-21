@@ -20,6 +20,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const takePhotoBtn = document.getElementById("take-photo");
   const photoPreview = document.getElementById("photo-preview");
   const retakePhotoBtn = document.getElementById("retake-photo");
+  const faceGuide = document.getElementById("face-guide-container");
 
   // --- Load kamera ---
   async function loadCameras() {
@@ -90,25 +91,68 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // --- Capture foto (mirror & preview) ---
   takePhotoBtn.addEventListener("click", async () => {
-    const detections = await faceapi.detectAllFaces(
+    // 1. Cek deteksi wajah sebelum countdown
+    const detections = await faceapi.detectSingleFace(
       video,
       new faceapi.TinyFaceDetectorOptions()
     );
-    if (detections.length === 0) {
+
+    if (!detections) {
       Swal.fire(
         "Wajah tidak terdeteksi!",
-        "Pastikan wajah terlihat jelas di kamera.",
+        "Pastikan wajah terlihat jelas di dalam bingkai.",
         "error"
       );
       return;
     }
 
-    // 🔢 Countdown dulu
+    // 2. Countdown
     takePhotoBtn.disabled = true;
     await startCountdown(3);
     takePhotoBtn.disabled = false;
 
-    // proses ambil foto (kode kamu yang lama tetap di sini)
+    // 3. Ambil ulang deteksi tepat saat foto diambil untuk akurasi crop
+    const finalDetection = await faceapi.detectSingleFace(
+      video,
+      new faceapi.TinyFaceDetectorOptions()
+    );
+
+    if (!finalDetection) {
+       Swal.fire("Gagal!", "Wajah hilang saat pengambilan foto. Silakan coba lagi.", "error");
+       return;
+    }
+
+    const { box } = finalDetection;
+    
+    // Konfigurasi Crop (tambah padding agar tidak terlalu mepet)
+    const padding = 0.4; // 40% padding
+    const cropX = Math.max(0, box.x - box.width * padding);
+    const cropY = Math.max(0, box.y - box.height * padding);
+    const cropWidth = Math.min(video.videoWidth - cropX, box.width * (1 + padding * 2));
+    const cropHeight = Math.min(video.videoHeight - cropY, box.height * (1 + padding * 2));
+
+    // --- PROSES CROP (untuk database) ---
+    const cropCanvas = document.createElement("canvas");
+    cropCanvas.width = 300; // Ukuran standar wajah (biar enteng di DB)
+    cropCanvas.height = 300;
+    const cropCtx = cropCanvas.getContext("2d");
+    
+    // Mirroring untuk crop juga agar konsisten
+    cropCtx.save();
+    cropCtx.translate(cropCanvas.width, 0);
+    cropCtx.scale(-1, 1);
+    
+    // Gambar hanya area wajah dari video (perhatikan videoWidth/height vs css width/height jika beda)
+    // Karena video asli di mirror di UI (transform: scaleX(-1)), kita harus hati-hati koordinatnya.
+    // face-api biasanya mendeteksi pada koordinat elemen asli (non-mirrored).
+    cropCtx.drawImage(
+      video, 
+      cropX, cropY, cropWidth, cropHeight, // Source
+      0, 0, cropCanvas.width, cropCanvas.height // Destination
+    );
+    cropCtx.restore();
+
+    // --- PROSES PREVIEW FULL (untuk UI agar bagus) ---
     canvas.width = video.videoWidth || 320;
     canvas.height = video.videoHeight || 240;
     const context = canvas.getContext("2d");
@@ -118,16 +162,22 @@ document.addEventListener("DOMContentLoaded", function () {
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     context.restore();
 
-    canvas.toBlob((blob) => {
+    // Simpan hasil crop ke capturedBlob
+    cropCanvas.toBlob((blob) => {
       capturedBlob = blob;
-      const url = URL.createObjectURL(blob);
-      photoPreview.src = url;
+      
+      // Preview tetap pakai foto FULL (canvas utama) sesuai request
+      const fullUrl = canvas.toDataURL("image/jpeg");
+      photoPreview.src = fullUrl;
       photoPreview.style.display = "block";
+      
       video.style.display = "none";
+      faceGuide.style.display = "none";
       takePhotoBtn.style.display = "none";
       retakePhotoBtn.style.display = "inline-block";
-      Swal.fire("Foto berhasil diambil!", "", "success");
-    }, "image/jpeg");
+      
+      Swal.fire("Foto berhasil diambil!", "Wajah Anda telah di-crop untuk database.", "success");
+    }, "image/jpeg", 0.8);
   });
 
   // --- Foto ulang ---
@@ -135,6 +185,7 @@ document.addEventListener("DOMContentLoaded", function () {
     photoPreview.style.display = "none";
     retakePhotoBtn.style.display = "none";
     video.style.display = "block";
+    faceGuide.style.display = "block";
     takePhotoBtn.style.display = "inline-block";
     capturedBlob = null;
   });
