@@ -1,10 +1,4 @@
 document.addEventListener("DOMContentLoaded", function () {
-  const textarea = document.getElementById("comment");
-
-  textarea.addEventListener("input", function () {
-    this.style.height = "auto";
-    this.style.height = this.scrollHeight + "px";
-  });
 
   Promise.all([
     faceapi.nets.tinyFaceDetector.loadFromUri("https://justadudewhohacks.github.io/face-api.js/models"),
@@ -33,7 +27,12 @@ document.addEventListener("DOMContentLoaded", function () {
       currentStream = stream;
     } catch (err) {
       console.error("Gagal akses kamera:", err);
-      Swal.fire("Error", "Tidak bisa mengakses kamera: " + err.message, "error");
+      Swal.fire({
+        title: "Error",
+        text: "Tidak bisa mengakses kamera: " + err.message,
+        icon: "error",
+        confirmButtonColor: "#1c8263"
+      });
     }
   }
 
@@ -48,9 +47,9 @@ document.addEventListener("DOMContentLoaded", function () {
     overlay.style.position = "absolute";
     overlay.style.left = video.offsetLeft + "px";
     overlay.style.top = video.offsetTop + "px";
-    document
-      .querySelector(".d-flex.justify-content-center.mb-2")
-      .appendChild(overlay);
+    // video.parentElement.appendChild(overlay);
+    // Updated to use the parent container explicitly or just the parentElement of video
+    video.parentElement.appendChild(overlay);
 
     faceapi.matchDimensions(overlay, displaySize);
 
@@ -98,11 +97,12 @@ document.addEventListener("DOMContentLoaded", function () {
     );
 
     if (!detections) {
-      Swal.fire(
-        "Wajah tidak terdeteksi!",
-        "Pastikan wajah terlihat jelas di dalam bingkai.",
-        "error"
-      );
+      Swal.fire({
+        title: "Wajah tidak terdeteksi!",
+        text: "Pastikan wajah terlihat jelas di dalam bingkai.",
+        icon: "error",
+        confirmButtonColor: "#1c8263"
+      });
       return;
     }
 
@@ -118,7 +118,12 @@ document.addEventListener("DOMContentLoaded", function () {
     );
 
     if (!finalDetection) {
-      Swal.fire("Gagal!", "Wajah hilang saat pengambilan foto. Silakan coba lagi.", "error");
+      Swal.fire({
+        title: "Gagal!",
+        text: "Wajah hilang saat pengambilan foto. Silakan coba lagi.",
+        icon: "error",
+        confirmButtonColor: "#1c8263"
+      });
       return;
     }
 
@@ -188,7 +193,12 @@ document.addEventListener("DOMContentLoaded", function () {
       takePhotoBtn.style.display = "none";
       retakePhotoBtn.style.display = "inline-block";
 
-      Swal.fire("Foto berhasil diambil!", "Wajah Anda telah di-crop untuk database.", "success");
+      Swal.fire({
+        title: "Success!",
+        text: "Foto berhasil diambil!",
+        icon: "success",
+        confirmButtonColor: "#1c8263"
+      });
     }, "image/jpeg", 0.8);
   });
 
@@ -210,18 +220,28 @@ document.addEventListener("DOMContentLoaded", function () {
     const comment = document.getElementById("comment").value.trim();
 
     if (!name || !comment) {
-      Swal.fire("Oops...", "Isi semua kolom terlebih dahulu!", "error");
+      Swal.fire({
+        title: "Oops...",
+        text: "Isi semua kolom terlebih dahulu!",
+        icon: "error",
+        confirmButtonColor: "#1c8263"
+      });
       return;
     }
     if (!capturedBlob) {
-      Swal.fire("Oops...", "Ambil foto dulu!", "error");
+      Swal.fire({
+        title: "Oops...",
+        text: "Ambil foto dulu!",
+        icon: "error",
+        confirmButtonColor: "#1c8263"
+      });
       return;
     }
 
     isSubmitting = true;
     const btnNext = document.getElementById("next");
     btnNext.disabled = true;
-    btnNext.textContent = "Memproses...";
+    btnNext.textContent = "Loading...";
 
     try {
       await submit(name, comment, capturedBlob);
@@ -231,7 +251,7 @@ document.addEventListener("DOMContentLoaded", function () {
     } finally {
       isSubmitting = false;
       btnNext.disabled = false;
-      btnNext.textContent = "MASUK";
+      btnNext.textContent = "Upload";
     }
   });
 
