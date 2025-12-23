@@ -9,7 +9,7 @@
 
 body {
   /* Green noise background approximation if bg.png is not perfect */
-  background: url("bg.png");
+  background: url("bg.svg");
   background-blend-mode: overlay;
   background-size: cover;
   background-position: center;
