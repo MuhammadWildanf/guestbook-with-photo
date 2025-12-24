@@ -382,8 +382,8 @@ document.addEventListener("DOMContentLoaded", function () {
       formData.append("photo2", blobs[2], "photo2.jpg");
       formData.append("outfit", JSON.stringify(selectedOutfit));
 
-      // const res = await fetch("https://guestbook-capture.vercel.app/submit-form", {
-      const res = await fetch("http://localhost:3000/submit-form", {
+      const res = await fetch("https://guestbook-capture.vercel.app/submit-form", {
+        // const res = await fetch("http://localhost:3000/submit-form", {
         method: "POST",
         body: formData
       });
