@@ -27,82 +27,134 @@
   <div class="main-container">
     <div class="container mb-3">
       <div class="row px-2 justify-content-center" id="hero-container">
-        <img src="logo.svg" alt="Logo" class="img-fluid " id="hero" style="max-height: 170px;" />
+        <img src="logo.svg" alt="Logo" class="img-fluid" id="hero" />
       </div>
     </div>
 
-    <div class="p1" id="p1" style="display: block">
+    <!-- PAGE 1: CAPTURE -->
+    <div class="p1" id="p1">
       <div class="content-wrapper container d-flex flex-column align-items-center">
 
         <!-- Title -->
-        <div class="row justify-content-center mb-3">
-          <img src="harapan-kamu.svg" class="img-fluid title-image" alt="Harapan Kamu">
+        <div class="title-section mb-3">
+          <h1 class="title-text">SELFIE</h1>
+          <h1 class="title-text">BERKILAU</h1>
         </div>
 
-        <!-- Form -->
-        <form id="identity" action="" method="get" class="w-100" style="max-width: 400px;">
-
-          <!-- Inputs -->
-          <div class="form-group mb-3">
-            <input type="text" class="form-control custom-input" id="name" aria-describedby="name" placeholder="Nama"
-              maxlength="15">
+        <!-- Camera Display (No Card) -->
+        <div class="camera-container position-relative"
+          style="width: 120px !important; height: 155px !important; max-width: 120px; max-height: 155px;">
+          <video id="video" autoplay playsinline muted></video>
+          <div id="face-guide-container" class="face-overlay">
+            <div class="face-hole"></div>
           </div>
-          <div class="form-group mb-4">
-            <textarea class="form-control custom-input" name="comment" id="comment" rows="3" maxlength="80"
-              placeholder="Tulis harapan kamu"></textarea>
+          <!-- Canvas for internal processing -->
+          <canvas id="canvas" style="display:none;"></canvas>
+          <div id="countdown">3</div>
+
+          <!-- Camera Button Overlay -->
+          <div class="camera-btn-overlay">
+            <button type="button" id="take-photo" class="btn btn-camera">
+              <i class="fas fa-camera"></i>
+            </button>
           </div>
+        </div>
 
-          <!-- Camera Section (White Card) -->
-          <div class="camera-card p-4 mb-4">
-            <h5 class="text-center mb-1 fw-bold text-dark">Ambil foto selfie</h5>
-            <p class="text-center text-secondary mb-3 small">Arahkan wajah ke kamera, klik Ambil Foto.<br>Jika kurang
-              jelas, klik Foto Ulang.</p>
-
-            <div class="camera-container d-flex justify-content-center mb-3 position-relative">
-              <video id="video" autoplay playsinline muted></video>
-              <div id="face-guide-container" class="face-overlay">
-                <div class="face-hole"></div>
-              </div>
-              <canvas id="canvas" style="display:none;"></canvas>
-              <img id="photo-preview" src="" alt="Preview Foto" style="display:none;" />
-
-              <div id="countdown">3</div>
+        <!-- Photo Slots -->
+        <div class="row w-100 justify-content-center mb-4">
+          <div class="col-5 d-flex flex-column align-items-center">
+            <div class="photo-slot" id="slot-1">
+              <img id="img-1" src="" alt="Foto 1" style="display:none;" />
+              <div class="placeholder-text">Foto 1</div>
             </div>
-
-            <div class="text-center">
-              <!-- Camera Trigger Button (Icon style) -->
-              <button type="button" id="take-photo" class="btn btn-camera">
-                <i class="fas fa-camera"></i>
-              </button>
-              <!-- Retake Text Button -->
-              <button type="button" id="retake-photo" class="btn btn-link text-danger text-decoration-none mt-2"
-                style="display:none;">
-                <i class="fas fa-redo"></i> Foto Ulang
-              </button>
+            <button class="btn btn-sm btn-danger mt-2 retake-btn" id="retake-1" style="display:none;">
+              <i class="fas fa-redo"></i>
+            </button>
+          </div>
+          <div class="col-5 d-flex flex-column align-items-center">
+            <div class="photo-slot" id="slot-2">
+              <img id="img-2" src="" alt="Foto 2" style="display:none;" />
+              <div class="placeholder-text">Foto 2</div>
             </div>
+            <button class="btn btn-sm btn-danger mt-2 retake-btn" id="retake-2" style="display:none;">
+              <i class="fas fa-redo"></i>
+            </button>
           </div>
+        </div>
 
-          <!-- Submit Button -->
-          <div class="d-flex justify-content-center mb-5">
-            <button id="next" class="btn btn-upload">Upload</button>
-          </div>
-
-        </form>
+        <!-- Next Button -->
+        <div class="d-flex justify-content-center mb-5">
+          <button id="to-page-2" class="btn btn-upload" disabled>Lanjut</button>
+        </div>
       </div>
     </div>
 
-    <!-- Thank You Section (Hidden) -->
+    <!-- PAGE 2: OUTFIT SELECTION -->
     <div class="p2" id="p2" style="display: none;">
+      <div class="content-wrapper container d-flex flex-column align-items-center">
+
+        <!-- Character Preview -->
+        <div class="character-preview-container mb-4" id="character-container">
+          <!-- Background/Body Base -->
+          <img src="" id="preview-body" class="preview-layer body-layer" style="display:none;" alt="Body" />
+          <!-- Face (swapping) -->
+          <div class="preview-layer face-layer">
+            <img src="" id="preview-face-img" />
+          </div>
+          <!-- Accessories -->
+          <img src="" id="preview-acc" class="preview-layer acc-layer" style="display:none;" alt="Accessory" />
+          <img src="" id="preview-hand" class="preview-layer hand-layer" style="display:none;" alt="Hand" />
+          <img src="" id="preview-leg" class="preview-layer leg-layer" style="display:none;" alt="Leg" />
+        </div>
+
+        <!-- Outfit Selector -->
+        <div class="outfit-selector-wrapper w-100">
+          <!-- Category Navigation -->
+          <div
+            class="category-nav bg-white p-3 rounded-4 shadow-sm mb-3 d-flex align-items-center justify-content-between">
+            <button class="btn btn-nav-arrow" id="prev-category">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <span class="category-name" id="current-category-name">AKSESORIS</span>
+            <button class="btn btn-nav-arrow" id="next-category">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+
+          <!-- Item Grid -->
+          <div class="bg-white p-3 rounded-4 shadow-sm">
+            <div class="item-grid" id="item-grid">
+              <!-- JS will populate this -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Controls -->
+        <div class="d-flex justify-content-between w-100 mt-4 px-3" style="max-width: 400px;">
+          <button id="back-to-p1" class="btn btn-control-circle">
+            <i class="fas fa-arrow-left"></i>
+          </button>
+          <button id="submit-all" class="btn btn-control-circle btn-control-large">
+            <i class="fas fa-upload"></i>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- PAGE 3: THANK YOU -->
+    <div class="p3" id="p3" style="display: none;">
       <div class="card text-light p-4 text-center success-card">
-        <h1 class="card-title mb-0">Terimakasih</h1>
-        <h2 id="user-name" class="my-2 bold-name"></h2>
+        <h1 class="card-title mb-0">TERIMAKASIH!</h1>
+        <h2 class="my-2 bold-name">Kamu Berkilau!</h2> <!-- Placeholder text as name input is removed -->
         <h1 class="card-title mt-0">Atas Partisipasinya!</h1>
+        <div class="mt-4">
+          <button onclick="location.reload()" class="btn btn-sm btn-light text-success">Kembali ke Awal</button>
+        </div>
       </div>
     </div>
 
   </div>
-  <div class="background-bottom"></div>
-
 </body>
 
 </html>

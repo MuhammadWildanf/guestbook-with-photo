@@ -1,77 +1,110 @@
 document.addEventListener("DOMContentLoaded", function () {
 
+  // --- CONFIGURATION & STATE ---
   Promise.all([
     faceapi.nets.tinyFaceDetector.loadFromUri("https://justadudewhohacks.github.io/face-api.js/models"),
-  ])
-
+  ]);
 
   let isSubmitting = false;
-  let capturedBlob = null;
+  let blobs = { 1: null, 2: null }; // Stores photo 1 and photo 2
   let currentStream = null;
 
+  // Outfit State
+  let selectedOutfit = {
+    acc: null,
+    body: null,
+    hand: null,
+    leg: null
+  };
+
+  // Assets Database - Organized by category folders
+  const OUTFIT_ASSETS = {
+    acc: [
+      { id: 'acc1', src: 'assets/accessories/1.png' },
+      { id: 'acc2', src: 'assets/accessories/2.png' },
+      { id: 'acc3', src: 'assets/accessories/3.png' },
+      { id: 'acc4', src: 'assets/accessories/4.png' },
+      { id: 'acc5', src: 'assets/accessories/5.png' },
+      { id: 'acc6', src: 'assets/accessories/6.png' },
+      { id: 'acc7', src: 'assets/accessories/7.png' }
+    ],
+    body: [
+      { id: 'body1', src: 'assets/body/1.png' },
+      { id: 'body2', src: 'assets/body/2.png' },
+      { id: 'body3', src: 'assets/body/3.png' },
+      { id: 'body4', src: 'assets/body/4.png' },
+      { id: 'body5', src: 'assets/body/5.png' },
+      { id: 'body6', src: 'assets/body/6.png' }
+    ],
+    hand: [
+      { id: 'hand1', src: 'assets/hand/1.png' },
+      { id: 'hand2', src: 'assets/hand/2.png' },
+      { id: 'hand3', src: 'assets/hand/3.png' },
+      { id: 'hand4', src: 'assets/hand/4.png' },
+      { id: 'hand5', src: 'assets/hand/5.png' },
+      { id: 'hand6', src: 'assets/hand/6.png' }
+    ],
+    leg: [
+      { id: 'leg1', src: 'assets/leg/1.png' },
+      { id: 'leg2', src: 'assets/leg/2.png' },
+      { id: 'leg3', src: 'assets/leg/3.png' },
+      { id: 'leg4', src: 'assets/leg/4.png' },
+      { id: 'leg5', src: 'assets/leg/5.png' },
+      { id: 'leg6', src: 'assets/leg/6.png' }
+    ]
+  };
+
+  // DOM Elements
   const video = document.getElementById("video");
   const canvas = document.getElementById("canvas");
   const takePhotoBtn = document.getElementById("take-photo");
-  const photoPreview = document.getElementById("photo-preview");
-  const retakePhotoBtn = document.getElementById("retake-photo");
-  const faceGuide = document.getElementById("face-guide-container");
+  const nextBtn = document.getElementById("to-page-2");
 
-  // --- Load kamera ---
+  // Slot Elements
+  const slots = {
+    1: { img: document.getElementById("img-1"), retake: document.getElementById("retake-1"), container: document.getElementById("slot-1") },
+    2: { img: document.getElementById("img-2"), retake: document.getElementById("retake-2"), container: document.getElementById("slot-2") }
+  };
+
+  // Page Elements
+  const p1 = document.getElementById("p1");
+  const p2 = document.getElementById("p2");
+  const p3 = document.getElementById("p3");
+
+  // --- CAMERA LOGIC ---
+
   async function loadCameras() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user" }, // "user" = kamera depan, "environment" = kamera belakang
+        video: { facingMode: "user" },
       });
       video.srcObject = stream;
       await video.play();
       currentStream = stream;
+      startDetection();
     } catch (err) {
       console.error("Gagal akses kamera:", err);
-      Swal.fire({
-        title: "Error",
-        text: "Tidak bisa mengakses kamera: " + err.message,
-        icon: "error",
-        confirmButtonColor: "#1c8263"
-      });
+      Swal.fire("Error", "Gagal akses kamera: " + err.message, "error");
     }
   }
 
-
-  // --- Start kamera dengan fallback ---
-
   async function startDetection() {
-    const displaySize = { width: video.width, height: video.height };
+    const displaySize = { width: video.width || 300, height: video.height || 300 }; // Fallback
 
-    // Buat canvas overlay untuk bounding box
-    const overlay = faceapi.createCanvasFromMedia(video);
-    overlay.style.position = "absolute";
-    overlay.style.left = video.offsetLeft + "px";
-    overlay.style.top = video.offsetTop + "px";
-    // video.parentElement.appendChild(overlay);
-    // Updated to use the parent container explicitly or just the parentElement of video
-    video.parentElement.appendChild(overlay);
+    // Check if video is ready
+    if (video.videoWidth === 0) {
+      setTimeout(startDetection, 100);
+      return;
+    }
 
-    faceapi.matchDimensions(overlay, displaySize);
-
-    setInterval(async () => {
-      if (video.readyState === 4) {
-        const detections = await faceapi.detectAllFaces(
-          video,
-          new faceapi.TinyFaceDetectorOptions()
-        );
-        const resized = faceapi.resizeResults(detections, displaySize);
-
-        overlay.getContext("2d").clearRect(0, 0, overlay.width, overlay.height);
-        faceapi.draw.drawDetections(overlay, resized);
-      }
-    }, 200);
+    // Just a simple loop to keep video active, detection logic moved to capture time for performance
+    // or keep detection for guide if needed.
   }
 
   function startCountdown(seconds = 3) {
     return new Promise((resolve) => {
       const countdownEl = document.getElementById("countdown");
       let counter = seconds;
-
       countdownEl.textContent = counter;
       countdownEl.style.display = "block";
 
@@ -88,212 +121,301 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // --- Capture foto (mirror & preview) ---
   takePhotoBtn.addEventListener("click", async () => {
-    // 1. Cek deteksi wajah sebelum countdown
-    const detections = await faceapi.detectSingleFace(
-      video,
-      new faceapi.TinyFaceDetectorOptions()
-    );
+    // Determine which slot to fill
+    let targetSlot = null;
+    if (!blobs[1]) targetSlot = 1;
+    else if (!blobs[2]) targetSlot = 2;
 
+    if (!targetSlot) return; // Both full
+
+    const detections = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions());
     if (!detections) {
-      Swal.fire({
-        title: "Wajah tidak terdeteksi!",
-        text: "Pastikan wajah terlihat jelas di dalam bingkai.",
-        icon: "error",
-        confirmButtonColor: "#1c8263"
-      });
+      Swal.fire("Wajah tidak terdeteksi!", "Pastikan wajah terlihat jelas.", "warning");
       return;
     }
 
-    // 2. Countdown
     takePhotoBtn.disabled = true;
     await startCountdown(3);
+
+    processCapture(targetSlot);
     takePhotoBtn.disabled = false;
+  });
 
-    // 3. Ambil ulang deteksi tepat saat foto diambil untuk akurasi crop
-    const finalDetection = await faceapi.detectSingleFace(
-      video,
-      new faceapi.TinyFaceDetectorOptions()
-    );
-
+  async function processCapture(slotId) {
+    // Verify face is still detected
+    const finalDetection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions());
     if (!finalDetection) {
-      Swal.fire({
-        title: "Gagal!",
-        text: "Wajah hilang saat pengambilan foto. Silakan coba lagi.",
-        icon: "error",
-        confirmButtonColor: "#1c8263"
-      });
+      Swal.fire("Gagal", "Wajah hilang saat capture.", "error");
       return;
     }
 
-    const { box } = finalDetection;
+    // Capture square image focused on face (for circular display)
+    const captureCanvas = document.createElement("canvas");
+    const size = 200; // Square for circular crop
+    captureCanvas.width = size;
+    captureCanvas.height = size;
+    const ctx = captureCanvas.getContext("2d");
 
-    // Perbaikan: Hitung titik tengah wajah agar hasil crop seimbang
-    const centerX = box.x + box.width / 2;
-    const centerY = box.y + box.height / 2;
+    // Get face bounding box
+    const box = finalDetection.box;
 
-    // Gunakan sisi terpanjang (width atau height) agar area potong selalu KOTAK (1:1)
-    // Ditambah padding agar tidak terlalu mepet ke wajah
-    const side = Math.max(box.width, box.height) * 1.8;
+    // Calculate face center in video coordinates
+    const faceCenterX = box.x + box.width / 2;
+    const faceCenterY = box.y + box.height / 2;
 
-    // Tentukan koordinat awal (top-left) untuk area kotak tersebut
-    let cropX = centerX - side / 2;
-    let cropY = centerY - side / 2;
+    // Zoom factor to focus on face (1.8x zoom on face)
+    const zoomFactor = 1.8;
+    const faceSize = Math.max(box.width, box.height) * zoomFactor;
 
-    // Pastikan koordinat tidak keluar dari batas video asli
-    if (cropX < 0) cropX = 0;
-    if (cropY < 0) cropY = 0;
+    // Calculate source rectangle (area to crop from video)
+    const srcX = faceCenterX - faceSize / 2;
+    const srcY = faceCenterY - faceSize / 2;
+    const srcSize = faceSize;
 
-    // Hitung lebar/tinggi akhir yang bisa diambil tanpa keluar batas
-    const finalSideX = Math.min(video.videoWidth - cropX, side);
-    const finalSideY = Math.min(video.videoHeight - cropY, side);
-    // Kita ambil yang terkecil agar tetap KOTAK sempurna
-    const finalSquareSide = Math.min(finalSideX, finalSideY);
+    // Mirror & Draw face-focused crop
+    ctx.save();
+    ctx.translate(size, 0);
+    ctx.scale(-1, 1);
 
-    // --- PROSES CROP (untuk database) ---
-    const cropCanvas = document.createElement("canvas");
-    cropCanvas.width = 300; // Ukuran standar wajah di database
-    cropCanvas.height = 300;
-    const cropCtx = cropCanvas.getContext("2d");
-
-    // Mirroring agar hasil crop searah dengan yang dilihat user
-    cropCtx.save();
-    cropCtx.translate(cropCanvas.width, 0);
-    cropCtx.scale(-1, 1);
-
-    cropCtx.drawImage(
+    // Draw cropped face area
+    ctx.drawImage(
       video,
-      cropX, cropY, finalSquareSide, finalSquareSide, // Source (selalu kotak)
-      0, 0, cropCanvas.width, cropCanvas.height       // Destination (selalu kotak 300x300)
+      srcX, srcY, srcSize, srcSize,  // Source: face area from video
+      0, 0, size, size                // Destination: full canvas
     );
-    cropCtx.restore();
 
-    // --- PROSES PREVIEW FULL (untuk UI agar bagus) ---
-    canvas.width = video.videoWidth || 320;
-    canvas.height = video.videoHeight || 240;
-    const context = canvas.getContext("2d");
-    context.save();
-    context.translate(canvas.width, 0);
-    context.scale(-1, 1);
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    context.restore();
+    ctx.restore();
 
-    // Simpan hasil crop ke capturedBlob
-    cropCanvas.toBlob((blob) => {
-      capturedBlob = blob;
+    captureCanvas.toBlob((blob) => {
+      blobs[slotId] = blob;
+      const url = URL.createObjectURL(blob);
 
-      // Preview tetap pakai foto FULL (canvas utama) sesuai request
-      const fullUrl = canvas.toDataURL("image/jpeg");
-      photoPreview.src = fullUrl;
-      photoPreview.style.display = "block";
+      // Update UI
+      slots[slotId].img.src = url;
+      slots[slotId].img.style.display = "block";
+      slots[slotId].container.querySelector(".placeholder-text").style.display = "none";
+      slots[slotId].retake.style.display = "block";
 
-      video.style.display = "none";
-      faceGuide.style.display = "none";
-      takePhotoBtn.style.display = "none";
-      retakePhotoBtn.style.display = "inline-block";
+      checkNextButton();
+    }, "image/jpeg", 0.92); // High quality
+  }
 
-      Swal.fire({
-        title: "Success!",
-        text: "Foto berhasil diambil!",
-        icon: "success",
-        confirmButtonColor: "#1c8263"
-      });
-    }, "image/jpeg", 0.8);
+  function checkNextButton() {
+    if (blobs[1] && blobs[2]) {
+      nextBtn.disabled = false;
+    } else {
+      nextBtn.disabled = true;
+    }
+  }
+
+  // Retake Logic
+  function handleRetake(id) {
+    blobs[id] = null;
+    slots[id].img.style.display = "none";
+    slots[id].container.querySelector(".placeholder-text").style.display = "block";
+    slots[id].retake.style.display = "none";
+    checkNextButton();
+  }
+  slots[1].retake.addEventListener("click", () => handleRetake(1));
+  slots[2].retake.addEventListener("click", () => handleRetake(2));
+
+
+  // --- PAGE 2 LOGIC ---
+
+  let faceInterval = null;
+
+  nextBtn.addEventListener("click", () => {
+    p1.style.display = "none";
+    p2.style.display = "flex";
+    startFaceSwap();
+    updateCategory(0); // Initialize with first category
   });
 
-  // --- Foto ulang ---
-  retakePhotoBtn.addEventListener("click", () => {
-    photoPreview.style.display = "none";
-    retakePhotoBtn.style.display = "none";
-    video.style.display = "block";
-    faceGuide.style.display = "block";
-    takePhotoBtn.style.display = "inline-block";
-    capturedBlob = null;
+  document.getElementById("back-to-p1").addEventListener("click", () => {
+    p2.style.display = "none";
+    p1.style.display = "block";
+    stopFaceSwap();
   });
 
-  document.getElementById("next").addEventListener("click", async (e) => {
-    e.preventDefault();
+  function startFaceSwap() {
+    if (faceInterval) clearInterval(faceInterval);
+
+    const faceImg = document.getElementById("preview-face-img");
+    let currentShow = 1;
+
+    // Set initial
+    if (blobs[1]) faceImg.src = URL.createObjectURL(blobs[1]);
+
+    faceInterval = setInterval(() => {
+      currentShow = currentShow === 1 ? 2 : 1;
+      if (blobs[currentShow]) {
+        faceImg.src = URL.createObjectURL(blobs[currentShow]);
+      }
+    }, 1500); // Swap every 1.5s
+  }
+
+  function stopFaceSwap() {
+    if (faceInterval) clearInterval(faceInterval);
+  }
+
+  // Outfit Selection with Arrow Navigation
+  const categories = ['acc', 'body', 'hand', 'leg'];
+  const categoryNames = {
+    'acc': 'AKSESORIS',
+    'body': 'BADAN',
+    'hand': 'TANGAN',
+    'leg': 'KAKI'
+  };
+  let currentCategoryIndex = 0;
+
+  const prevCategoryBtn = document.getElementById("prev-category");
+  const nextCategoryBtn = document.getElementById("next-category");
+  const categoryNameEl = document.getElementById("current-category-name");
+
+  function updateCategory(index) {
+    currentCategoryIndex = index;
+    const category = categories[currentCategoryIndex];
+    categoryNameEl.textContent = categoryNames[category];
+
+    // Update button states
+    prevCategoryBtn.disabled = currentCategoryIndex === 0;
+    nextCategoryBtn.disabled = currentCategoryIndex === categories.length - 1;
+
+    renderOutfitSelector(category);
+  }
+
+  prevCategoryBtn.addEventListener("click", () => {
+    if (currentCategoryIndex > 0) {
+      updateCategory(currentCategoryIndex - 1);
+    }
+  });
+
+  nextCategoryBtn.addEventListener("click", () => {
+    if (currentCategoryIndex < categories.length - 1) {
+      updateCategory(currentCategoryIndex + 1);
+    }
+  });
+
+  const itemGrid = document.getElementById("item-grid");
+  const previewLayers = {
+    body: document.getElementById("preview-body"),
+    hat: document.getElementById("preview-hat"), // Using hat for acc/head items? User said 'Aksesoris'
+    acc: document.getElementById("preview-acc")
+  };
+
+  function renderOutfitSelector(category) {
+    itemGrid.innerHTML = "";
+    const items = OUTFIT_ASSETS[category] || [];
+
+    // Add "None" option
+    const noneOpt = document.createElement("div");
+    noneOpt.className = "item-option";
+    noneOpt.innerHTML = "<span class='text-muted'>X</span>"; // or icon
+    noneOpt.onclick = () => selectItem(category, null);
+    itemGrid.appendChild(noneOpt);
+
+    items.forEach(item => {
+      const el = document.createElement("div");
+      el.className = "item-option";
+      if (selectedOutfit[category] === item.id) el.classList.add("selected");
+
+      const img = document.createElement("img");
+      img.src = item.src;
+      // Handle error for missing assets
+      img.onerror = () => { img.src = "https://via.placeholder.com/60?text=" + item.id; };
+
+      el.appendChild(img);
+      el.onclick = () => selectItem(category, item);
+      itemGrid.appendChild(el);
+    });
+  }
+
+  function selectItem(category, item) {
+    // Store only the ID, not the full object
+    selectedOutfit[category] = item ? item.id : null;
+
+    // Update visual selection
+    document.querySelectorAll(".item-option").forEach(el => el.classList.remove("selected"));
+    // Re-render to show selection
+    renderOutfitSelector(category);
+
+    // Update Preview - Map categories to layer IDs
+    const layerMap = {
+      'acc': 'preview-acc',
+      'body': 'preview-body',
+      'hand': 'preview-hand',
+      'leg': 'preview-leg'
+    };
+
+    const targetImgId = layerMap[category];
+
+    if (targetImgId) {
+      const layer = document.getElementById(targetImgId);
+      if (layer) {
+        if (item) {
+          layer.src = item.src;
+          layer.style.display = "block";
+          console.log(`Updated ${category} layer with:`, item.src);
+        } else {
+          layer.style.display = "none";
+          console.log(`Cleared ${category} layer`);
+        }
+      } else {
+        console.error(`Layer element not found: ${targetImgId}`);
+      }
+    }
+  }
+
+
+  // --- SUBMIT ---
+  const submitBtn = document.getElementById("submit-all");
+  submitBtn.addEventListener("click", async () => {
     if (isSubmitting) return;
-
-    const name = document.getElementById("name").value.trim();
-    const comment = document.getElementById("comment").value.trim();
-
-    if (!name || !comment) {
-      Swal.fire({
-        title: "Oops...",
-        text: "Isi semua kolom terlebih dahulu!",
-        icon: "error",
-        confirmButtonColor: "#1c8263"
-      });
-      return;
-    }
-    if (!capturedBlob) {
-      Swal.fire({
-        title: "Oops...",
-        text: "Ambil foto dulu!",
-        icon: "error",
-        confirmButtonColor: "#1c8263"
-      });
-      return;
-    }
-
     isSubmitting = true;
-    const btnNext = document.getElementById("next");
-    btnNext.disabled = true;
-    btnNext.textContent = "Loading...";
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    submitBtn.disabled = true;
 
-    try {
-      await submit(name, comment, capturedBlob);
-      document.getElementById("p2").style.display = "block";
-      document.getElementById("p1").style.display = "none";
-      showThankYouScreen({ name });
-    } finally {
-      isSubmitting = false;
-      btnNext.disabled = false;
-      btnNext.textContent = "Upload";
-    }
-  });
-
-  async function submit(name, comment, photoBlob) {
     try {
       const formData = new FormData();
-      formData.append("name", name);
-      formData.append("comment", comment);
-      formData.append("photo", photoBlob, "camera-photo.jpg");
+      formData.append("photo1", blobs[1], "photo1.jpg");
+      formData.append("photo2", blobs[2], "photo2.jpg");
+      formData.append("outfit", JSON.stringify(selectedOutfit));
 
-      const response = await fetch(
-        "https://guestbook-capture.vercel.app/submit-form",
-        {
-          // const response = await fetch("http://localhost:3000/submit-form", {
-          method: "POST",
-          body: formData,
-        }
-      );
+      // const res = await fetch("https://guestbook-capture.vercel.app/submit-form", {
+      const res = await fetch("http://localhost:3000/submit-form", {
+        method: "POST",
+        body: formData
+      });
 
-      if (!response.ok) {
-        const errorMessage = await response.text();
-        throw new Error(
-          `HTTP ${response.status}: ${response.statusText} - ${errorMessage}`
-        );
+      const responseText = await res.text();
+      console.log("Response status:", res.status);
+      console.log("Response body:", responseText);
+
+      if (res.ok) {
+        stopFaceSwap();
+        p2.style.display = "none";
+        p3.style.display = "flex";
+      } else {
+        throw new Error(`Upload Failed: ${res.status} - ${responseText}`);
       }
 
-      const responseData = await response.json();
-      console.log("Response Data:", responseData);
-    } catch (error) {
-      console.error("Error submitting data:", error.message || error);
+    } catch (err) {
+      console.error("Submit error:", err);
+      Swal.fire({
+        title: "Error",
+        text: "Gagal menyimpan data: " + err.message,
+        icon: "error",
+        confirmButtonColor: "#2d9c86"
+      });
+    } finally {
+      isSubmitting = false;
+      submitBtn.innerHTML = '<i class="fas fa-upload"></i>';
+      submitBtn.disabled = false;
     }
-  }
+  });
 
-  function showThankYouScreen(data) {
-    const { name } = data;
-    document.getElementById("user-name").textContent = name;
-    const p2 = document.getElementById("p2");
-    p2.style.display = "flex";
-    p2.style.flexDirection = "column";
-    p2.style.alignItems = "center";
-  }
-
-  // --- Start ---
+  // Init
   loadCameras();
+
 });

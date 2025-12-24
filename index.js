@@ -9,11 +9,6 @@ const multer = require("multer");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running in port:${PORT}`);
-});
-
 // Firebase Admin
 admin.initializeApp({
   credential: admin.credential.cert({
@@ -34,21 +29,19 @@ admin.initializeApp({
   storageBucket: "guestbook-with-photo-446da.firebasestorage.app",
 });
 
+// Middlewares - MUST BE BEFORE ROUTES
+app.use(cors({ origin: true }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // Serve frontend
 app.use(express.static(path.join(__dirname, "frontend")));
 
-// Folder uploads
-
+// Multer configuration
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
 });
-
-
-// Middlewares
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cors({ origin: true }));
 
 // Routes
 
@@ -119,42 +112,101 @@ app.delete("/entries-all", async (req, res) => {
 });
 
 
-app.post("/submit-form", upload.single("photo"), async (req, res) => {
+app.post("/submit-form", upload.fields([
+  { name: 'photo1', maxCount: 1 },
+  { name: 'photo2', maxCount: 1 }
+]), async (req, res) => {
+  console.log("📥 Received submit-form request");
+  console.log("Files received:", req.files ? Object.keys(req.files) : 'No files');
+  console.log("Body:", req.body);
+
   try {
+    console.log("🔧 Initializing Firebase services...");
     const db = admin.database();
     const bucket = admin.storage().bucket();
-    const { name, comment } = req.body;
+    const { outfit } = req.body;
     const timestamp = admin.database.ServerValue.TIMESTAMP;
 
-    let photoUrl = null;
+    let photo1Url = null;
+    let photo2Url = null;
 
-    if (req.file) {
-      const destFileName = `uploads/${Date.now()}_${req.file.originalname.replace(/\s+/g, "_")}`;
-      const file = bucket.file(destFileName);
+    // Upload Photo 1
+    if (req.files && req.files['photo1']) {
+      console.log("📸 Uploading photo1...");
+      const file1 = req.files['photo1'][0];
+      const destFileName1 = `uploads/${Date.now()}_photo1.jpg`;
+      const fileRef1 = bucket.file(destFileName1);
 
-      await file.save(req.file.buffer, {
-        metadata: { contentType: req.file.mimetype },
-        public: true, // langsung bisa diakses publik
+      await fileRef1.save(file1.buffer, {
+        metadata: { contentType: file1.mimetype },
+        public: true,
       });
 
-      photoUrl = `https://storage.googleapis.com/${bucket.name}/${destFileName}`;
+      photo1Url = `https://storage.googleapis.com/${bucket.name}/${destFileName1}`;
+      console.log("✅ Photo1 uploaded:", photo1Url);
+    } else {
+      console.log("⚠️ No photo1 found in request");
+    }
+
+    // Upload Photo 2
+    if (req.files && req.files['photo2']) {
+      console.log("📸 Uploading photo2...");
+      const file2 = req.files['photo2'][0];
+      const destFileName2 = `uploads/${Date.now()}_photo2.jpg`;
+      const fileRef2 = bucket.file(destFileName2);
+
+      await fileRef2.save(file2.buffer, {
+        metadata: { contentType: file2.mimetype },
+        public: true,
+      });
+
+      photo2Url = `https://storage.googleapis.com/${bucket.name}/${destFileName2}`;
+      console.log("✅ Photo2 uploaded:", photo2Url);
+    } else {
+      console.log("⚠️ No photo2 found in request");
+    }
+
+    console.log("💾 Saving to database...");
+
+    // Parse outfit from JSON string to object
+    let outfitData = {};
+    try {
+      outfitData = outfit ? JSON.parse(outfit) : {};
+      console.log("📦 Outfit data:", outfitData);
+    } catch (e) {
+      console.error("⚠️ Failed to parse outfit:", e);
+      outfitData = {};
     }
 
     const ref = db.ref("guestbook");
-    const newRef = await ref.push({ name, comment, photoUrl, timestamp });
+    const newRef = await ref.push({
+      photo1Url,
+      photo2Url,
+      outfit: outfitData, // Store as object, not string
+      timestamp
+    });
     const newKey = newRef.key;
+    console.log("✅ Data saved with key:", newKey);
 
     res.status(200).json({
       success: true,
       key: newKey,
-      name,
-      comment,
-      photoUrl,
+      photo1Url,
+      photo2Url,
+      outfit
     });
   } catch (error) {
-    console.error("🔥 Error submitting data:", error.message, error.stack);
-    res.status(500).json({ error: error.message });
+    console.error("🔥 Error submitting data:", error.message);
+    console.error("Stack trace:", error.stack);
+    res.status(500).json({
+      error: error.message,
+      details: error.stack
+    });
   }
 });
 
 
+// Start server - MUST BE AT THE END
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port: ${PORT}`);
+});
