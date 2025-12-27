@@ -160,18 +160,33 @@ document.addEventListener("DOMContentLoaded", function () {
     // Get face bounding box
     const box = finalDetection.box;
 
+    // Get available video dimensions
+    const vW = video.videoWidth;
+    const vH = video.videoHeight;
+
     // Calculate face center in video coordinates
     const faceCenterX = box.x + box.width / 2;
-    const faceCenterY = box.y + box.height / 2;
+    // Shift center up slightly to capture more hair
+    const faceCenterY = box.y + box.height * 0.45;
 
-    // Zoom factor to focus on face (1.8x zoom on face)
-    const zoomFactor = 1.8;
-    const faceSize = Math.max(box.width, box.height) * zoomFactor;
+    // Base zoom factor
+    const zoomFactor = 1.6;
+    let faceSize = Math.max(box.width, box.height) * zoomFactor;
 
-    // Calculate source rectangle (area to crop from video)
-    const srcX = faceCenterX - faceSize / 2;
-    const srcY = faceCenterY - faceSize / 2;
-    const srcSize = faceSize;
+    // CLAMP: Ensure crop size doesn't exceed available video smallest dimension
+    const maxCrop = Math.min(vW, vH);
+    if (faceSize > maxCrop) {
+      faceSize = maxCrop;
+    }
+
+    // Calculate source rectangle
+    let srcX = faceCenterX - faceSize / 2;
+    let srcY = faceCenterY - faceSize / 2;
+
+    // CLAMP: Ensure source rectangle is within video bounds
+    // (Prevents capturing 'void' which causes cut-offs or black bars)
+    srcX = Math.max(0, Math.min(srcX, vW - faceSize));
+    srcY = Math.max(0, Math.min(srcY, vH - faceSize));
 
     // Mirror & Draw face-focused crop
     ctx.save();
@@ -181,8 +196,8 @@ document.addEventListener("DOMContentLoaded", function () {
     // Draw cropped face area
     ctx.drawImage(
       video,
-      srcX, srcY, srcSize, srcSize,  // Source: face area from video
-      0, 0, size, size                // Destination: full canvas
+      srcX, srcY, faceSize, faceSize,  // Source: clamped face area
+      0, 0, size, size                 // Destination: full canvas
     );
 
     ctx.restore();
