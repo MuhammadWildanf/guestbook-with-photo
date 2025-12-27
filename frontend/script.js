@@ -150,9 +150,9 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // Capture square image focused on face (for circular display)
+    // Capture square image focused on face (for circular crop)
     const captureCanvas = document.createElement("canvas");
-    const size = 200; // Square for circular crop
+    const size = 400; // Increased quality
     captureCanvas.width = size;
     captureCanvas.height = size;
     const ctx = captureCanvas.getContext("2d");
@@ -267,7 +267,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (blobs[currentShow]) {
         faceImg.src = URL.createObjectURL(blobs[currentShow]);
       }
-    }, 1500); // Swap every 1.5s
+    }, 200);
   }
 
   function stopFaceSwap() {

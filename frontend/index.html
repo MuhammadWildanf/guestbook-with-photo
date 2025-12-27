@@ -43,7 +43,7 @@
 
         <!-- Camera Display (No Card) -->
         <div class="camera-container position-relative"
-          style="width: 120px !important; height: 155px !important; max-width: 120px; max-height: 155px;">
+          style="width: 240px !important; height: 320px !important; max-width: 240px; max-height: 320px;">
           <video id="video" autoplay playsinline muted></video>
           <div id="face-guide-container" class="face-overlay">
             <div class="face-hole"></div>
@@ -84,7 +84,9 @@
 
         <!-- Next Button -->
         <div class="d-flex justify-content-center mb-5">
-          <button id="to-page-2" class="btn btn-upload" disabled>Lanjut</button>
+          <button id="to-page-2" class="btn btn-upload btn-circle-arrow" disabled>
+            <i class="fas fa-arrow-right"></i>
+          </button>
         </div>
       </div>
     </div>
@@ -109,22 +111,24 @@
 
         <!-- Outfit Selector -->
         <div class="outfit-selector-wrapper w-100">
-          <!-- Category Navigation -->
-          <div
-            class="category-nav bg-white p-3 rounded-4 shadow-sm mb-3 d-flex align-items-center justify-content-between">
-            <button class="btn btn-nav-arrow" id="prev-category">
-              <i class="fas fa-chevron-left"></i>
-            </button>
-            <span class="category-name" id="current-category-name">AKSESORIS</span>
-            <button class="btn btn-nav-arrow" id="next-category">
-              <i class="fas fa-chevron-right"></i>
-            </button>
-          </div>
+          <div class="outfit-control-card">
+            <!-- Category Navigation -->
+            <div
+              class="category-nav bg-white p-3 rounded-4 shadow-sm mb-3 d-flex align-items-center justify-content-between">
+              <button class="btn btn-nav-arrow" id="prev-category">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <span class="category-name" id="current-category-name">AKSESORIS</span>
+              <button class="btn btn-nav-arrow" id="next-category">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
 
-          <!-- Item Grid -->
-          <div class="bg-white p-3 rounded-4 shadow-sm">
-            <div class="item-grid" id="item-grid">
-              <!-- JS will populate this -->
+            <!-- Item Grid -->
+            <div class="bg-white p-3 rounded-4 shadow-sm">
+              <div class="item-grid" id="item-grid">
+                <!-- JS will populate this -->
+              </div>
             </div>
           </div>
         </div>
