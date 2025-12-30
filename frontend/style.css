@@ -257,15 +257,16 @@ video,
 }
 
 .retake-btn {
-  width: 35px;
-  height: 35px;
+  width: 55px;
+  height: 55px;
   border-radius: 50%;
   padding: 0;
+  background-color: #1ea17b;
   display: flex !important; /* Force flex for centering */
   align-items: center;
   justify-content: center;
   margin-top: 10px !important;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 /* Page 2 Layout */

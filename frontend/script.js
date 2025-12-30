@@ -136,7 +136,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     takePhotoBtn.disabled = true;
-    await startCountdown(3);
+    // await startCountdown(3);
 
     processCapture(targetSlot);
     takePhotoBtn.disabled = false;
