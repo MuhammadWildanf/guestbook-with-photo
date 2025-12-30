@@ -170,7 +170,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const faceCenterY = box.y + box.height * 0.45;
 
     // Base zoom factor
-    const zoomFactor = 1.6;
+    // 1.1 = STRICT Face Only (Minimize background/shoulders)
+    const zoomFactor = 1.1;
     let faceSize = Math.max(box.width, box.height) * zoomFactor;
 
     // CLAMP: Ensure crop size doesn't exceed available video smallest dimension
@@ -243,9 +244,27 @@ document.addEventListener("DOMContentLoaded", function () {
   nextBtn.addEventListener("click", () => {
     p1.style.display = "none";
     p2.style.display = "flex";
+
+    // Apply Defaults - Force selection of first item for each category
+    restoreDefaults();
+
     startFaceSwap();
     updateCategory(0); // Initialize with first category
   });
+
+  function restoreDefaults() {
+    ['acc', 'body', 'hand', 'leg'].forEach(cat => {
+      // Ensure we have assets
+      if (OUTFIT_ASSETS[cat] && OUTFIT_ASSETS[cat].length > 0) {
+        // Only set if not already set (or force set? User said 'tampilkan default 1 semua', implying reset)
+        // Let's force reset to ensure consistent starting state
+        if (!selectedOutfit[cat]) {
+          console.log(`Setting default for ${cat}:`, OUTFIT_ASSETS[cat][0].id);
+          selectItem(cat, OUTFIT_ASSETS[cat][0]);
+        }
+      }
+    });
+  }
 
   document.getElementById("back-to-p1").addEventListener("click", () => {
     p2.style.display = "none";
