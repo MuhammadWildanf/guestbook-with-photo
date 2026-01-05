@@ -45,9 +45,12 @@
                 <thead class="table-dark">
                     <tr>
                         <th>No</th>
-                        <th>Nama</th>
-                        <th>Komentar</th>
-                        <th>Foto</th>
+                        <th>Foto 1</th>
+                        <th>Foto 2</th>
+                        <th>Aksesoris</th>
+                        <th>Badan</th>
+                        <th>Tangan</th>
+                        <th>Kaki</th>
                         <th>Waktu</th>
                         <th>Aksi</th>
                     </tr>
@@ -59,29 +62,19 @@
         </div>
     </div>
 
-    <!-- Modal Edit -->
-    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <!-- Modal Detail Outfit (Optional for future use if needed) -->
+    <div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
         <div class="modal-dialog">
-            <form id="editForm" class="modal-content">
+            <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="editModalLabel">Edit Entry</h5>
+                    <h5 class="modal-title" id="detailModalLabel">Detail Entry</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <input type="hidden" id="editKey" />
-                    <div class="mb-3">
-                        <label for="editName" class="form-label">Nama</label>
-                        <input type="text" class="form-control" id="editName" required />
-                    </div>
-                    <div class="mb-3">
-                        <label for="editComment" class="form-label">Komentar</label>
-                        <input type="text" class="form-control" id="editComment" required />
-                    </div>
+                <div class="modal-body text-center">
+                    <div id="detailPhotos" class="d-flex justify-content-center gap-2 mb-3"></div>
+                    <div id="detailOutfit" class="text-start"></div>
                 </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Simpan</button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 
@@ -95,18 +88,47 @@
                         extend: 'excelHtml5',
                         text: 'Export Excel',
                         exportOptions: {
-                            columns: [1, 2, 4] // hanya Nama, Komentar, Waktu
+                            columns: [0, 1, 2, 3, 4, 5, 6, 7],
+                            format: {
+                                body: function (data, row, column, node) {
+                                    // Untuk kolom Foto (1 & 2), ambil URL-nya saja untuk Excel
+                                    if (column === 1 || column === 2) {
+                                        const img = $(node).find('img');
+                                        return img.length ? img.attr('src') : '-';
+                                    }
+                                    return data;
+                                }
+                            }
                         }
                     }
                 ],
                 columns: [
                     { data: null }, // Nomor urut
-                    { data: 'name' },
-                    { data: 'comment' },
                     {
-                        data: 'photoUrl', render: function (data) {
-                            return data ? `<img src="${data}" class="img-fluid rounded" style="max-width:80px;max-height:80px;" alt="Foto"/>` : '';
+                        data: 'photo1Url', render: function (data) {
+                            return data ? `<img src="${data}" class="img-fluid rounded" style="max-width:80px;max-height:100px;object-fit:cover;" alt="Foto 1"/>` : '-';
                         }
+                    },
+                    {
+                        data: 'photo2Url', render: function (data) {
+                            return data ? `<img src="${data}" class="img-fluid rounded" style="max-width:80px;max-height:100px;object-fit:cover;" alt="Foto 2"/>` : '-';
+                        }
+                    },
+                    {
+                        data: 'outfit.acc',
+                        render: function (data) { return data || '-'; }
+                    },
+                    {
+                        data: 'outfit.body',
+                        render: function (data) { return data || '-'; }
+                    },
+                    {
+                        data: 'outfit.hand',
+                        render: function (data) { return data || '-'; }
+                    },
+                    {
+                        data: 'outfit.leg',
+                        render: function (data) { return data || '-'; }
                     },
                     {
                         data: 'timestamp', render: function (data) {
@@ -116,17 +138,14 @@
                     {
                         data: null, orderable: false, render: function (data, type, row) {
                             return `
-        <button class="btn btn-sm btn-warning me-1" onclick="showEditModal('${row.key}', '${row.name}', '${row.comment}')">
-            <i class="fa fa-edit"></i> Edit
-        </button>
-        <button class="btn btn-sm btn-danger" onclick="deleteEntry('${row.key}')">
-            <i class="fa fa-trash"></i> Delete
-        </button>
-    `;
+                                <button class="btn btn-sm btn-danger" onclick="deleteEntry('${row.key}')">
+                                    <i class="fa fa-trash"></i> Delete
+                                </button>
+                            `;
                         }
                     }
                 ],
-                order: [[4, 'asc']],
+                order: [[7, 'desc']], // Urutkan berdasarkan waktu (terbaru dulu)
                 columnDefs: [
                     {
                         targets: 0,
@@ -147,9 +166,10 @@
                             Object.entries(data).forEach(([key, entry]) => {
                                 arr.push({ ...entry, key });
                             });
-                            arr.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+                            // Sort descending by timestamp for display
+                            arr.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
                         }
-                        console.log('Data yang di-load:', arr); // Tambahkan ini
+                        console.log('Data loaded:', arr);
                         table.clear().rows.add(arr).draw();
                     });
             }
@@ -181,36 +201,6 @@
                             }
                         });
                 }
-            });
-
-            window.showEditModal = function (key, name, comment) {
-                $('#editKey').val(key);
-                $('#editName').val(name);
-                $('#editComment').val(comment);
-                var modal = new bootstrap.Modal(document.getElementById('editModal'));
-                modal.show();
-            }
-
-            $('#editForm').on('submit', function (e) {
-                e.preventDefault();
-                const key = $('#editKey').val();
-                const name = $('#editName').val();
-                const comment = $('#editComment').val();
-                fetch(`/entries/${key}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, comment })
-                })
-                    .then(res => res.json())
-                    .then(result => {
-                        if (result.success) {
-                            var modal = bootstrap.Modal.getInstance(document.getElementById('editModal'));
-                            modal.hide();
-                            loadTable();
-                        } else {
-                            alert('Gagal update data');
-                        }
-                    });
             });
         });
     </script>
